@@ -33,7 +33,7 @@ namespace KeepLureActive
             {
                 if (Me.ZoneId == Dalaran && Me.SubZoneId == MargossRetreat)
                 {
-                    infoLog(Me.SubZoneText + ":" + Me.SubZoneId.ToString());
+                    //infoLog(Me.SubZoneText + ":" + Me.SubZoneId.ToString());
                     if (UseItem(GetItemByID(Items.MarkOfAquaos), S.UseMarkOfAquaos))
                     {
                         return;
@@ -131,7 +131,7 @@ namespace KeepLureActive
             {
                 return true;
             }
-            if (_pauseTimer.IsRunning) { _pauseTimer.Stop(); }
+            if (_pauseTimer.IsRunning) { _pauseTimer.Stop(); _pauseTimer.Reset(); }
             return false;
         }
         bool HasFishingAura()
