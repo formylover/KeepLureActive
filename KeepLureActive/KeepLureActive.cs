@@ -110,7 +110,7 @@ namespace KeepLureActive
         private static LocalPlayer Me { get { return StyxWoW.Me; } }
         public override string Author { get { return "SpeshulK926"; } }
         public override string Name { get { return "Keep Lure Active"; } }
-        public override Version Version { get { return new Version(1, 4); } }
+        public override Version Version { get { return new Version(1, 5); } }
         public override string ButtonText { get { return "Settings..."; } }
         public override bool WantButton { get { return true; } }
         public override void OnButtonPress()
