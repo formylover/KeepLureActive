@@ -154,11 +154,17 @@ namespace KeepLureActive
             UseStunnedAngryShark.Checked = K.S.UseStunnedAngryShark;
             UseSwollenMurlocEgg.Checked = K.S.UseSwollenMurlocEgg;
             UseMarkOfAquaos.Checked = K.S.UseMarkOfAquaos;
+            ThrowFishBackInTheWater.Checked = K.S.ThrowFishBackInWater;
         }
 
         private void UseMarkOfAquaos_CheckedChanged(object sender, EventArgs e)
         {
             K.S.UseMarkOfAquaos = UseMarkOfAquaos.Checked;
+        }
+
+        private void ThrowFishBackInTheWater_CheckedChanged(object sender, EventArgs e)
+        {
+            K.S.ThrowFishBackInWater = ThrowFishBackInTheWater.Checked;
         }
     }
 }

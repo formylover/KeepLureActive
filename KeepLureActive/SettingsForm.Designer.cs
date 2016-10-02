@@ -30,6 +30,8 @@
         {
             this.components = new System.ComponentModel.Container();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.ThrowFishBackInTheWater = new System.Windows.Forms.CheckBox();
+            this.UseMarkOfAquaos = new System.Windows.Forms.CheckBox();
             this.UseArcaneLure = new System.Windows.Forms.CheckBox();
             this.PauseSecondsAfterLureUse = new System.Windows.Forms.NumericUpDown();
             this.label1 = new System.Windows.Forms.Label();
@@ -61,7 +63,6 @@
             this.UseAxefishLure = new System.Windows.Forms.CheckBox();
             this.UseMessageInABeerBottle = new System.Windows.Forms.CheckBox();
             this.UseStunnedAngryShark = new System.Windows.Forms.CheckBox();
-            this.UseMarkOfAquaos = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.PauseSecondsAfterLureUse)).BeginInit();
             this.groupBox2.SuspendLayout();
@@ -74,16 +75,39 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.ThrowFishBackInTheWater);
             this.groupBox1.Controls.Add(this.UseMarkOfAquaos);
             this.groupBox1.Controls.Add(this.UseArcaneLure);
             this.groupBox1.Controls.Add(this.PauseSecondsAfterLureUse);
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Location = new System.Drawing.Point(13, 13);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(238, 96);
+            this.groupBox1.Size = new System.Drawing.Size(238, 128);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "General";
+            // 
+            // ThrowFishBackInTheWater
+            // 
+            this.ThrowFishBackInTheWater.AutoSize = true;
+            this.ThrowFishBackInTheWater.Location = new System.Drawing.Point(9, 85);
+            this.ThrowFishBackInTheWater.Name = "ThrowFishBackInTheWater";
+            this.ThrowFishBackInTheWater.Size = new System.Drawing.Size(160, 17);
+            this.ThrowFishBackInTheWater.TabIndex = 4;
+            this.ThrowFishBackInTheWater.Text = "Throw fish back in the water";
+            this.ThrowFishBackInTheWater.UseVisualStyleBackColor = true;
+            this.ThrowFishBackInTheWater.CheckedChanged += new System.EventHandler(this.ThrowFishBackInTheWater_CheckedChanged);
+            // 
+            // UseMarkOfAquaos
+            // 
+            this.UseMarkOfAquaos.AutoSize = true;
+            this.UseMarkOfAquaos.Location = new System.Drawing.Point(9, 62);
+            this.UseMarkOfAquaos.Name = "UseMarkOfAquaos";
+            this.UseMarkOfAquaos.Size = new System.Drawing.Size(123, 17);
+            this.UseMarkOfAquaos.TabIndex = 3;
+            this.UseMarkOfAquaos.Text = "Use Mark of Aquaos";
+            this.UseMarkOfAquaos.UseVisualStyleBackColor = true;
+            this.UseMarkOfAquaos.CheckedChanged += new System.EventHandler(this.UseMarkOfAquaos_CheckedChanged);
             // 
             // UseArcaneLure
             // 
@@ -127,9 +151,9 @@
             this.groupBox2.Controls.Add(this.UseRustyQueenfishBroach);
             this.groupBox2.Controls.Add(this.UsePearlescentConch);
             this.groupBox2.Controls.Add(this.UseAromaticMurlocSlime);
-            this.groupBox2.Location = new System.Drawing.Point(13, 115);
+            this.groupBox2.Location = new System.Drawing.Point(13, 147);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(238, 123);
+            this.groupBox2.Size = new System.Drawing.Size(238, 91);
             this.groupBox2.TabIndex = 1;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Azsuna";
@@ -200,9 +224,9 @@
             this.UseDemonicDetrius.AutoSize = true;
             this.UseDemonicDetrius.Location = new System.Drawing.Point(9, 19);
             this.UseDemonicDetrius.Name = "UseDemonicDetrius";
-            this.UseDemonicDetrius.Size = new System.Drawing.Size(126, 17);
+            this.UseDemonicDetrius.Size = new System.Drawing.Size(132, 17);
             this.UseDemonicDetrius.TabIndex = 0;
-            this.UseDemonicDetrius.Text = "Use Demonic Detrius";
+            this.UseDemonicDetrius.Text = "Use Demonic Detbrius";
             this.toolTip1.SetToolTip(this.UseDemonicDetrius, "Skrog Toenail summons Salteye Skrog-Hunter to drop Aromatic Murloc Slime\r\nLeyshim" +
         "mer Blenny");
             this.UseDemonicDetrius.UseVisualStyleBackColor = true;
@@ -436,17 +460,6 @@
             this.UseStunnedAngryShark.UseVisualStyleBackColor = true;
             this.UseStunnedAngryShark.CheckedChanged += new System.EventHandler(this.UseStunnedAngryShark_CheckedChanged);
             // 
-            // UseMarkOfAquaos
-            // 
-            this.UseMarkOfAquaos.AutoSize = true;
-            this.UseMarkOfAquaos.Location = new System.Drawing.Point(9, 62);
-            this.UseMarkOfAquaos.Name = "UseMarkOfAquaos";
-            this.UseMarkOfAquaos.Size = new System.Drawing.Size(123, 17);
-            this.UseMarkOfAquaos.TabIndex = 3;
-            this.UseMarkOfAquaos.Text = "Use Mark of Aquaos";
-            this.UseMarkOfAquaos.UseVisualStyleBackColor = true;
-            this.UseMarkOfAquaos.CheckedChanged += new System.EventHandler(this.UseMarkOfAquaos_CheckedChanged);
-            // 
             // SettingsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -517,5 +530,6 @@
         private System.Windows.Forms.CheckBox UseMessageInABeerBottle;
         private System.Windows.Forms.CheckBox UseStunnedAngryShark;
         private System.Windows.Forms.CheckBox UseMarkOfAquaos;
+        private System.Windows.Forms.CheckBox ThrowFishBackInTheWater;
     }
 }
