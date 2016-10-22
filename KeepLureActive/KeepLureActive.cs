@@ -1,4 +1,5 @@
 ﻿using Buddy.Coroutines;
+using CommonBehaviors.Actions;
 using Styx;
 using Styx.Common;
 using Styx.CommonBot;
@@ -10,6 +11,7 @@ using Styx.WoWInternals;
 using Styx.WoWInternals.WoWObjects;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
@@ -44,8 +46,10 @@ namespace KeepLureActive
         const int MargossRetreat = 8270;
         const int BrokenShore = 7543;
         const int TheGreatSea = 7656;
+        const int SuramarAszureBay = 7917;
+        const int SuramarRuinsOfSashjtar = 7916;
         #endregion
-        public static KLASettings S = new KLASettings();
+        public static KLASettings S = KLASettings.Instance;
         public static List<Fish> FishToThrowBack
         {
             get
@@ -110,12 +114,12 @@ namespace KeepLureActive
         private static LocalPlayer Me { get { return StyxWoW.Me; } }
         public override string Author { get { return "SpeshulK926"; } }
         public override string Name { get { return "Keep Lure Active"; } }
-        public override Version Version { get { return new Version(1, 5); } }
+        public override Version Version { get { return new Version(1, 6); } }
         public override string ButtonText { get { return "Settings..."; } }
         public override bool WantButton { get { return true; } }
         public override void OnButtonPress()
         {
-            SettingsForm frm = new SettingsForm();
+            SettingsForm2 frm = new SettingsForm2();
             frm.ShowDialog();
             S.Save();
             ClearAndReAddLures();
@@ -172,51 +176,30 @@ namespace KeepLureActive
         #endregion
 
 
-
         public override void Pulse()
         {
             if (_initialized)
             {
+
+
                 if (Me.IsChanneling && Me.ChanneledSpell?.Name == "Fishing" && (_lastRecordedZoneId != Me.ZoneId || _lastRecordedSubZoneId != Me.SubZoneId))
                 {
                     _lastRecordedZoneId = Me.ZoneId;
                     _lastRecordedSubZoneId = Me.SubZoneId;
-                    infoLog("New Zone ID or Sub Zone ID fishing in: ZoWneId:" + _lastRecordedZoneId + " (" + Me.ZoneText + "), SubZoneId:" + _lastRecordedSubZoneId + "(" + Me.SubZoneText + ")");
+                    infoLog("New Zone ID or Sub Zone ID fishing in: ZoneId:" + _lastRecordedZoneId + " (" + Me.ZoneText + "), SubZoneId:" + _lastRecordedSubZoneId + " (" + Me.SubZoneText + ")");
                 }
                 //if (Me.IsChanneling && Me.ChanneledSpell?.Name == "Fishing" && _lastFishingLocation != Me.Location)
                 //{
                 //    _lastFishingLocation = Me.Location;
                 //    infoLog("Saved new fish location - X:" + _lastFishingLocation.X + " Y:" + _lastFishingLocation.Y + " Z:" + _lastFishingLocation.Z);
                 //}
-                if (S.UseMarkOfAquaos)
-                {
-                    if (AquaosBossIsCurrentlySummoned && !_aquaosPauseTimer.IsRunning)
-                    {
-                        WoWUnit aquaos = AquaosBoss;
-                        if (aquaos != null)
-                        {
-                            _aquaosPauseTimer.Restart();
-                            infoLog(aquaos.SafeName + " has been summoned by someone! Waiting 2 minutes to cast mark if you have/get one.");
-                            if (Me.CurrentTarget != aquaos) { aquaos.Target(); }
-                        }
 
-                    }
-                    if (_aquaosPauseTimer.IsRunning && _aquaosPauseTimer.ElapsedMilliseconds >= (120 * 1000))
-                    {
-                        _aquaosPauseTimer.Reset();
-                        infoLog("Can cast Mark of Aquaos again.");
-                    }
-                    //if (!AquaosBossIsCurrentlySummoned && Me.Location != _lastFishingLocation)
-                    //{
-                    //    CommonCoroutines.MoveTo(_lastFishingLocation).Wait();
-                    //}
-                }
                 if (_coroutine == null || _coroutine.IsFinished)
                 {
                     if (_coroutine != null)
                         Logging.WriteDiagnostic(Colors.Red, "Keep Lure Active Ended.  Restarting...");
 
-                    _coroutine = new Coroutine(() => MainCoroutine());
+                    _coroutine = new Coroutine(async () => await MainCoroutine());
                 }
 
                 try
@@ -237,36 +220,29 @@ namespace KeepLureActive
         #region Coroutines
         private async Task<bool> MainCoroutine()
         {
-            while (!_quit)
+            while (true)
             {
-                try
+
+                //await Coroutine.ExternalTask(FacePool());
+                // throw the fish back
+                //await FacePool();
+                if (S.ThrowFishBackInWater)
                 {
-                    //await Coroutine.ExternalTask(FacePool());
-                    // throw the fish back
-                    //await FacePool();
-                    if (S.ThrowFishBackInWater)
-                    {
-                        await Coroutine.ExternalTask(ThrowFishBack());
-                    }
-                    await Coroutine.ExternalTask(UseArcaneLure());
-                    await Coroutine.ExternalTask(UseMarkOfAquaos());
-                    await Coroutine.ExternalTask(UseZoneSpecificLure());
-
+                    await ThrowFishBack();
                 }
-
-
-                catch (Exception ex)
-                {
-                    Logging.WriteDiagnostic(ex.ToString());
-
-                }
-                return false;
+                await UseArcaneLure();
+                await UseMarkOfAquaos();
+                await UseZoneSpecificLure();
+                await Coroutine.Yield();
             }
-            return true;
+
+
+
         }
         private async Task ThrowFishBack()
         {
-            await Task.Delay(SpellManager.GlobalCooldownLeft);
+            await Coroutine.Sleep(SpellManager.GlobalCooldownLeft);
+
             if (!DoingSomethingElse)
             {
                 // throw fish back for Artifact updates
@@ -274,46 +250,63 @@ namespace KeepLureActive
                 {
                     if (FishToThrowBack.Where(f => f.ID == item.ItemInfo.Id).Any())
                     {
-                        if (UseItem(item, S.ThrowFishBackInWater))
-                        {
-                            return;
-                        }
+                        UseItem(item, S.ThrowFishBackInWater);
 
                     }
                 }
             }
-            return;
         }
         private async Task UseArcaneLure()
         {
-            await Task.Delay(SpellManager.GlobalCooldownLeft);
+            await Coroutine.Sleep(SpellManager.GlobalCooldownLeft);
 
             if (!DoingSomethingElse)
             {
                 var lure = Me.BagItems.FirstOrDefault(b => b.ItemInfo.Id == Lures.FirstOrDefault(l => l.Name == "Arcane Lure")?.ID);
-                if (UseItem(lure, IsInCorrectZone(Zones.AllButDalaran) && !Me.HasAura(Auras.ArcaneLure) && S.UseArcaneLure))
-                {
-                    return; 
-                }
+                UseItem(lure, IsInCorrectZone(Zones.AllButDalaran) && !Me.HasAura(Auras.ArcaneLure) && S.UseArcaneLure);
             }
             return;
         }
         private async Task UseMarkOfAquaos()
         {
-            await Task.Delay(SpellManager.GlobalCooldownLeft);
+            await Coroutine.Sleep(SpellManager.GlobalCooldownLeft);
 
-            if (!DoingSomethingElse)
+            if (S.UseMarkOfAquaos)
             {
-                var lure = Me.BagItems.FirstOrDefault(b => b.ItemInfo.Id == Lures.FirstOrDefault(l => l.Name == "Mark of Aquaos")?.ID);
-                if (lure != null && AquaosBossIsCurrentlySummoned && _aquaosPauseTimer.ElapsedMilliseconds < (120 * 1000))
+                if (AquaosBossIsCurrentlySummoned && !_aquaosPauseTimer.IsRunning)
                 {
-                    infoLog("Boss already summoned or recently summoned. Trying again when he is not spawned.");
-                    return;
+                    WoWUnit aquaos = AquaosBoss;
+                    if (aquaos != null)
+                    {
+                        _aquaosPauseTimer.Restart();
+                        infoLog(aquaos.SafeName + " has been summoned by someone! Waiting 3 minutes to cast mark if you have/get one.");
+                        if (Me.CurrentTarget != aquaos) { aquaos.Target(); }
+                    }
+
                 }
-                if (UseItem(lure, IsInCorrectZone(Zones.DalaranMargossRetreat) && S.UseMarkOfAquaos))
+                if (_aquaosPauseTimer.IsRunning && _aquaosPauseTimer.ElapsedMilliseconds >= (180 * 1000))
                 {
                     _aquaosPauseTimer.Reset();
-                    return;
+                    infoLog("Can cast Mark of Aquaos again.");
+                }
+                //if (!AquaosBossIsCurrentlySummoned && Me.Location != _lastFishingLocation)
+                //{
+                //    CommonCoroutines.MoveTo(_lastFishingLocation).Wait();
+                //}
+
+
+                if (!DoingSomethingElse)
+                {
+                    var lure = Me.BagItems.FirstOrDefault(b => b.ItemInfo.Id == Lures.FirstOrDefault(l => l.Name == "Mark of Aquaos")?.ID);
+                    if (lure != null && AquaosBossIsCurrentlySummoned && _aquaosPauseTimer.ElapsedMilliseconds < (120 * 1000))
+                    {
+                        infoLog("Boss already summoned or recently summoned. Trying again when he is not spawned.");
+                        return;
+                    }
+                    if (UseItem(lure, IsInCorrectZone(Zones.DalaranMargossRetreat) && S.UseMarkOfAquaos))
+                    {
+                        _aquaosPauseTimer.Reset();
+                    }
                 }
             }
             return;
@@ -412,11 +405,16 @@ namespace KeepLureActive
 
         bool IsInOpenOcean()
         {
-            if (Me.ZoneId == BrokenShore || Me.ZoneId == TheGreatSea) { return true; }
+            if ((Me.ZoneId == BrokenShore || Me.ZoneId == TheGreatSea)
+                || (Me.ZoneId == SuramarZoneId
+                    && (Me.SubZoneId == SuramarAszureBay || Me.SubZoneId == SuramarRuinsOfSashjtar)
+                )
+            ) { return true; }
             return false;
         }
         bool IsInCorrectZone()
         {
+            if (!S.UseZoneCheck) { return true; }
             if (Me.ZoneId == AzsunaZoneId || Me.ZoneId == HighmountainZoneId || Me.ZoneId == StormheimZoneId || Me.ZoneId == SuramarZoneId || Me.ZoneId == ValSharahZoneId || IsInOpenOcean())
             {
                 return true;
@@ -426,6 +424,7 @@ namespace KeepLureActive
         // check an item against a specific zone.
         bool IsInCorrectZone(Zones zone)
         {
+            if (!S.UseZoneCheck) { return true; }
             if (Me.ZoneId == AzsunaZoneId)
             {
                 if (zone.HasFlag(Zones.Azsuna)) { return true; }
@@ -638,62 +637,176 @@ namespace KeepLureActive
     public enum FishTypes { None, Skill, Ancient };
     public class KLASettings : Settings
     {
+        private static KLASettings _instance;
+
         public KLASettings()
             : base(System.IO.Path.Combine(CharacterSettingsDirectory, "KeepLureActive.xml"))
         {
 
 
         }
-        [Setting, DefaultValue(true)]
+        public static KLASettings Instance
+        {
+            get { return _instance ?? (_instance = new KLASettings()); }
+        }
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("General")]
+        [DisplayName("Use Zone Check")]
+        [Description("Will check to see what zone you are in before throwing fish back in the water.  Turn this off to stop Zone Checking.")]
+        public bool UseZoneCheck { get; set; }
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("General")]
+        [DisplayName("Throw Fish Back in Water")]
+        [Description("If Enabled, will throw fish back into the water after catching them.")]
         public bool ThrowFishBackInWater { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Azsuna")]
+        [DisplayName("Use Aromatic Murloc Slime")]
+        [Description("Uses Aromatic Murloc Slime to catch Leyshimmer Blenny.")]
         public bool UseAromaticMurlocSlime { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Azsuna")]
+        [DisplayName("Use Pearlescent Conch")]
+        [Description("Uses Pearlescent Conch to catch Nar'thalas Hermit.")]
         public bool UsePearlescentConch { get; set; }
-        [Setting, DefaultValue(false)]
+
+        [Setting, Styx.Helpers.DefaultValue(false)]
+        [Category("Azsuna")]
+        [DisplayName("Use Rusty Queenfish Broach")]
+        [Description("Uses Rusty Queenfish Broach to enable Ghostly Queenfish pools.\nNote: This will not catch them if you are AFK.  Only enable this if you have something special set up to do pool fishing.")]
         public bool UseRustyQueenfishBroach { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Highmountain")]
+        [DisplayName("Use Frost Worm")]
+        [Description("Uses Frost Work to catch Coldriver Carp")]
         public bool UseFrostWorm { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Highmountain")]
+        [DisplayName("Use Salmon Lure")]
+        [Description("Uses Salmon Lure to catch Ancient Highmountain Salmon")]
         public bool UseSalmonLure { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Highmountain")]
+        [DisplayName("Use Swollen Murloc Egg")]
+        [Description("Uses Swollen Murloc Egg to summon a Murloc NPC which will give you a buff to catch Mountain Puffer")]
         public bool UseSwollenMurlocEgg { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Stormheim")]
+        [DisplayName("Use Moosehorn Hook")]
+        [Description("Uses Moosehorn Hook to catch Silverscale Minnow to catch Thundering Stormray")]
         public bool UseMoosehornHook { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Stormheim")]
+        [DisplayName("Use Silverscale Minnow")]
+        [Description("Uses Silverscale Minnow to catch Thundering Stormray")]
         public bool UseSilverscaleMinnow { get; set; }
-        [Setting, DefaultValue(false)]
+
+        [Setting, Styx.Helpers.DefaultValue(false)]
+        [Category("Stormheim")]
+        [DisplayName("Use Ancient Vrykul Ring")]
+        [Description("Uses Ancient Vrykul Ring which enables Oodelfjisk pools.\n: Note: This will not catch them if you are AFK. Only enable this if you have something special set up to do pool fishing.")]
         public bool UseAncientVrykulRing { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Stormheim")]
+        [DisplayName("Use Soggy Drakescale")]
+        [Description("Uses Soggy Drakescale to catch Graybelly Lobster")]
         public bool UseSoggyDrakescale { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Val'sharah")]
+        [DisplayName("Use Rotten Fishbone")]
+        [Description("Uses Rotten Fishbone to catch Ancient Mossgill")]
         public bool UseRottenFishbone { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Val'sharah")]
+        [DisplayName("Use Nightmare Nightcrawler")]
+        [Description("Uses Nightmare Nightcrawler to summon Lorlathil Druid which gives you a buff to catch Terrorfin")]
         public bool UseNightmareNightcrawler { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Val'sharah")]
+        [DisplayName("Use Drowned Thistleleaf")]
+        [Description("Uses Drowned Thistleleaf to catch Thorned Flounder")]
         public bool UseDrownedThistleleaf { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Suramar")]
+        [DisplayName("Use Demonic Detritus")]
+        [Description("Uses Demonic Detritus to catch Tainted Runescale Koi")]
         public bool UseDemonicDetrius { get; set; }
-        [Setting, DefaultValue(false)]
+
+        [Setting, Styx.Helpers.DefaultValue(false)]
+        [Category("Suramar")]
+        [DisplayName("Use Sleeping Murloc")]
+        [Description("Uses Sleeping Murloc to awaken a murloc that drops Seerspine Puffer on the ground.\nNote: This will likely not catch them if you are AFK.")]
         public bool UseSleepingMurloc { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Suramar")]
+        [DisplayName("Use Enchanted Lure")]
+        [Description("Uses Enchanted Lure to catch Magic-Eater Frog")]
         public bool UseEnchantedLure { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Open Ocean")]
+        [DisplayName("Use Stunned Angry Shark")]
+        [Description("Uses Stunned Angry Shark, which if killed and looted will give you Seabottom Squid.\nNote: It does a lot of damage and you won't loot AFK by default.")]
         public bool UseStunnedAngryShark { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Open Ocean")]
+        [DisplayName("Use Message in a Beer Bottle")]
+        [Description("Uses Message in a Beer Bottle which give you Axefish Lure")]
         public bool UseMessageInABeerBottle { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Open Ocean")]
+        [DisplayName("Use Axefish Lure")]
+        [Description("Uses Axefish Lure to catch Axefish")]
         public bool UseAxefishLure { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Open Ocean")]
+        [DisplayName("Use Decayed Whale Blubber")]
+        [Description("Uses Decayed Whale Blubber that attracts Ravenous Flies which can be looted.\nNote: It won't loot AFK by default.")]
         public bool UseDecayedWhaleBlubber { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("Open Ocean")]
+        [DisplayName("Use Ravenous Fly")]
+        [Description("Uses Ravenous Fly to catch Ancient Black Barracuda")]
         public bool UseRavenousFly { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("General")]
+        [DisplayName("Use Arcane Lure")]
+        [Description("Uses Arcane Lure when not in Malgoss' Area in Dalaran and in a valid Rare fishing location")]
         public bool UseArcaneLure { get; set; }
-        [Setting, DefaultValue(60)]
+
+        [Setting, Styx.Helpers.DefaultValue(60)]
+        [Category("General")]
+        [DisplayName("Pause Seconds After Lure Use")]
+        [Description("Pauses any additional lure use for 'X' seconds so you do not accidently overwrite a lure buff before it activates")]
         public int PauseSecondsAfterUseLure { get; set; }
-        [Setting, DefaultValue(true)]
+
+        [Setting, Styx.Helpers.DefaultValue(true)]
+        [Category("General")]
+        [DisplayName("Use Mark of Aquaos")]
+        [Description("Uses Mark of Aquaos (semi-intelligently) while fishing for Arcane Lures.  It will try not to throw it after someone else has already thrown theirs.")]
         public bool UseMarkOfAquaos { get; set; }
+
+
 
     }
 }
