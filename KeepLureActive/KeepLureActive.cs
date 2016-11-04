@@ -54,6 +54,8 @@ namespace KeepLureActive
         {
             get
             {
+                int count = 0;
+                count = new Random().Next(1, 4);
                 if (_fishToThrowBack.Count <= 0)
                 {
                     _fishToThrowBack.Add(new Fish() { FishType = FishTypes.Skill, ID = 133728, Name = "Terrorfin" });
@@ -315,7 +317,7 @@ namespace KeepLureActive
         private async Task UseZoneSpecificLure()
         {
             await Task.Delay(SpellManager.GlobalCooldownLeft);
-            if (!HasFishingAura() && !ShouldPauseAfterLureUse() && IsInCorrectZone())
+            if (!HasFishingAura() && !ShouldPauseAfterLureUse() && IsInCorrectZone() && !DoingSomethingElse)
             {
                 var bagItems = Me.BagItems;
                 foreach (var lure in Lures.Where(l => l.ShouldUse))
@@ -352,6 +354,18 @@ namespace KeepLureActive
         //}
         bool UseItem(WoWItem item, bool reqs, string log = null)
         {
+
+            if (Me.GroupInfo.IsInRaid)
+            {
+                WoWPartyMember mainTank;
+                WoWPartyMember groupLeader;
+
+                foreach (var player in Me.GroupInfo.RaidMembers)
+                {
+                    if (player.IsMainTank) { mainTank = player; }
+                    if (player.GroupLeader) { groupLeader = player; }                      
+                }
+            }
             if (item == null || !reqs || !CanUseItem(item)) { return false; }
 
             infoLog(string.Format($"/use {item.Name}" + (String.IsNullOrEmpty(log) ? "" : " - " + log)));
@@ -496,6 +510,7 @@ namespace KeepLureActive
             if (Me.HasAura(Auras.AromaticMurlocSlime)
                 || Me.HasAura(Auras.PearlescentConch)
                 || Me.HasAura(Auras.RustyQueenfishBroach)
+                || Me.HasAura(Auras.SkrogToenail)
                 || Me.HasAura(Auras.FrostWorm)
                 || Me.HasAura(Auras.SalmonLure)
                 || Me.HasAura(Auras.BlessingOfTheMurlocs)
@@ -544,11 +559,11 @@ namespace KeepLureActive
             _lures.Add(new Lure() { ID = 133719, Name = "Sleeping Murloc", LocationToUse = Zones.Suramar, ShouldUse = S.UseSleepingMurloc });
             _lures.Add(new Lure() { ID = 133717, Name = "Enchanted Lure", LocationToUse = Zones.Suramar, ShouldUse = S.UseEnchantedLure });
 
-            _lures.Add(new Lure() { ID = 133723, Name = "Stunned Angry Shark", ShouldUse = S.UseStunnedAngryShark });
-            _lures.Add(new Lure() { ID = 133721, Name = "Message In A Beer Bottle", ShouldUse = S.UseMessageInABeerBottle });
-            _lures.Add(new Lure() { ID = 133722, Name = "Axefish Lure", ShouldUse = S.UseAxefishLure });
-            _lures.Add(new Lure() { ID = 133724, Name = "Decayed Whale Blubber", ShouldUse = S.UseDecayedWhaleBlubber });
-            _lures.Add(new Lure() { ID = 133795, Name = "Ravenous Fly", ShouldUse = S.UseRavenousFly });
+            _lures.Add(new Lure() { ID = 133723, Name = "Stunned Angry Shark", ShouldUse = S.UseStunnedAngryShark, LocationToUse = Zones.Ocean });
+            _lures.Add(new Lure() { ID = 133721, Name = "Message In A Beer Bottle", ShouldUse = S.UseMessageInABeerBottle, LocationToUse = Zones.Ocean });
+            _lures.Add(new Lure() { ID = 133722, Name = "Axefish Lure", ShouldUse = S.UseAxefishLure, LocationToUse = Zones.Ocean });
+            _lures.Add(new Lure() { ID = 133724, Name = "Decayed Whale Blubber", ShouldUse = S.UseDecayedWhaleBlubber, LocationToUse = Zones.Ocean });
+            _lures.Add(new Lure() { ID = 133795, Name = "Ravenous Fly", ShouldUse = S.UseRavenousFly, LocationToUse = Zones.Ocean });
         }
 
         public void infoLog(string Message, params object[] args)
@@ -569,6 +584,7 @@ namespace KeepLureActive
                 ArcaneLure = 218861,                // General "Get Lure" Lure
             #endregion
             #region Azsuna
+                SkrogToenail = 201804,              // Skrog Toenail to get Leyshimmer Blenny.  Don't use other things when u have this buff because it'll overwrite it after
                 AromaticMurlocSlime = 201805,       // Leyshimmer Blenny
                 PearlescentConch = 201806,          // Nar'thalas Hermit
                 RustyQueenfishBroach = 201807,      // Ghostly Queenfish - Fished from pool, so will not use for now, but want to check to make sure it is not already active.
